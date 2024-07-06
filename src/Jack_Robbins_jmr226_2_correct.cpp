@@ -80,7 +80,8 @@ int literal(std::stringstream& in){
 	//Otherwise, we have a bad token
 	std::cerr << literal << " is not a valid literal" << std::endl;
 	std::cerr << "Invalid expression" << std::endl;
-	exit(-1);
+	//Hard exit
+	exit(1);
 }
 
 
@@ -104,7 +105,9 @@ int factor(std::stringstream& in){
 			return value;
 		} else {
 			//Otherwise, we have unmatched parenthesis
-			std::cerr << "Unmatched parenthesis" << std::endl;
+			std::cerr << "Syntax Error: Unmatched parenthesis" << std::endl;
+			std::cerr << "Invalid expression" << std::endl;
+			//Hard exit
 			exit(1);
 		}
 
@@ -119,17 +122,27 @@ int factor(std::stringstream& in){
  * BNF Rule: <term>  :==  <factor> {(* | /) <factor>} 
  */
 int term(std::stringstream& in){
+	//We must see a valid factor first
 	int value = factor(in);
 
+	//While we keep seeing * or /, keep multiplying/dividing the next factor
 	while(seek(in) == '*' || seek(in) == '/'){
+		//multiplication case
 		if(consume_token(in, '*')){
 			value *= factor(in);
+		//Division case, we could have a tripping point here
 		} else if(consume_token(in, '/')){
+			//grab the next factor
 			int f = factor(in);
+
+			//Avoid having a divide by 0 runtime error
 			if(f == 0){
 				std::cerr << "Error: divide by 0 error" << std::endl;
+				std::cerr << "Invalid expression" << std::endl;
 				exit(1);
 			}
+			
+			//If it wasn't 0, we can divide just fine
 			value /= f;
 		}
 	}
@@ -139,14 +152,20 @@ int term(std::stringstream& in){
 
 
 /**
+ * Expression evaluation. This is the entry point to our program, and it is
+ * also the term where we could have some indirect recursion
  * BNF Rule: <expression>  ::= <term> {(+ | -) <term>} 
  */
 int expression(std::stringstream& in){
+	//We must see a valid term first
 	int value = term(in);
 
+	//While we keep seeing + or -, keep adding/subtrating the next term
 	while(seek(in) == '+' || seek(in) == '-'){
-		if(consume_token(in, '+')){;
+		//addition case
+		if(consume_token(in, '+')){
 			value += term(in);
+		//Subtraction case
 		} else if (consume_token(in, '-')){
 			value -= term(in);
 		}
@@ -169,14 +188,16 @@ int parse_interpret(std::stringstream& in){
 int main(void){
 	//Grab the users input
 	std::string input;
-	std::cout << "\nEnter the arithmetic expression to evaluate: ";
+	std::cout << "Enter the arithmetic expression to evaluate: ";
 	std::getline(std::cin, input);
 
 	//We will use a stream to go character gy character
 	std::stringstream in(input);
-
+	
 	//Make a call to parse_interpret with the input stream
-	std::cout << parse_interpret(in) << std::endl;
+	int result = parse_interpret(in);
+
+	std::cout << "Expression result: " << input << " = " << result << std::endl;
 
 	return 0;
 }
