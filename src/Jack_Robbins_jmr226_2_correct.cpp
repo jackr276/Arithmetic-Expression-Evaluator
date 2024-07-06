@@ -1,9 +1,16 @@
 /**
  * Author: Jack Robbins, jmr226
  * CS 610, programming assignment 2, Recursive descent parser/interpreter
+ *
+ * Here is the BNF for the context-free grammar of the expressions
+ *
+ * <expression>  ::= <term> {(+ | -) <term>} 
+ * <term>  		 ::= <factor> {(* | /) <factor>} 
+ * <factor>      ::= ( <expression> ) | <literal>
+ * <literal>     ::=  0|1|2|3|4|5|6|7|8|9
  */
+
 #include <cstdlib>
-#include <ios>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -79,38 +86,52 @@ int literal(std::stringstream& in){
 
 /**
  * For this rule, we can have 0 or many expressions, or a literal
- * BNF Rule: { <expression> } | <literal>
+ * This is the implicit recursion in recursive descent, we can go back up and have more
+ * expressions
+ * BNF Rule: <factor> ::= ( <expression> ) | <literal>
  */
-int term(std::stringstream& in){
+int factor(std::stringstream& in){
 	//Declare function prototype
 	int expression(std::stringstream& in);
 
-	return literal(in);
+	//If we see an open parenthesis, we know we have an expression
+	if(consume_token(in, '(')) {
+		//Evaluate the expression
+		int value = expression(in);
 
-	//Temporarily grab the next character
-	char ch;
-	in >> std::skipws >> ch;	
+		//If we can consume an rparen, everything went well
+		if(consume_token(in, ')')){
+			return value;
+		} else {
+			//Otherwise, we have unmatched parenthesis
+			std::cerr << "Unmatched parenthesis" << std::endl;
+			exit(1);
+		}
 
-	//If we don't see a '*' or '/', we have a literal
-	if(peek_next(in) != '*' && peek_next(in) != '/'){
-		in.putback(ch);
-		return literal(in);
+	//If we get here, we know it was just a literal
 	} else {
-		return expression(in);
+		return literal(in);
 	}
 }
 
 
 /**
- * BNF Rule: <factor>  :==  <term> + <factor>  |  <term> - <factor>  |  <term>
+ * BNF Rule: <term>  :==  <factor> {(* | /) <factor>} 
  */
-int factor(std::stringstream& in){
-	int value = term(in);
+int term(std::stringstream& in){
+	int value = factor(in);
 
-	if(consume_token(in, '+')){
-		value += factor(in);
-	} else if (consume_token(in, '-')){
-		value -= factor(in);
+	while(seek(in) == '*' || seek(in) == '/'){
+		if(consume_token(in, '*')){
+			value *= factor(in);
+		} else if(consume_token(in, '/')){
+			int f = factor(in);
+			if(f == 0){
+				std::cerr << "Error: divide by 0 error" << std::endl;
+				exit(1);
+			}
+			value /= f;
+		}
 	}
 
 	return value;
@@ -118,26 +139,16 @@ int factor(std::stringstream& in){
 
 
 /**
- * BNF Rule: <expression>  ::=  <factor> * <expression>   |   <factor>  /  <expression>   |   <factor>
+ * BNF Rule: <expression>  ::= <term> {(+ | -) <term>} 
  */
 int expression(std::stringstream& in){
-	//grab the first factor's value
-	int value = factor(in);
+	int value = term(in);
 
-	if(consume_token(in, '*')){
-		value *= expression(in);
-	} else if (consume_token(in, '/')){
-		//Grab the divisor
-		int divisor = expression(in);
-
-		//Runtime error checking
-		if(divisor == 0){
-			std::cerr << "Illegal divide by 0 operation" << std::endl;
-			std::cerr << "Invalid expression" << std::endl;
-			exit(-1);
-
-		} else {
-			value /= divisor; 
+	while(seek(in) == '+' || seek(in) == '-'){
+		if(consume_token(in, '+')){;
+			value += term(in);
+		} else if (consume_token(in, '-')){
+			value -= term(in);
 		}
 	}
 
