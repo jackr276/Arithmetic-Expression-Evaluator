@@ -2,22 +2,38 @@
  * Author: Jack Robbins, jmr226
  * CS 610, programming assignment 2, Recursive descent parser/interpreter
  */
-#include <ios>
 #include <iostream>
 #include <sstream>
 #include <string>
 
+int literal(std::stringstream& in){
+	return 0;
+}
 
 
+int term(std::stringstream& in){
+	return 0;
+}
 
 
-int evaluate(std::stringstream& in){
+int factor(std::stringstream& in){
+	return 0;
+}
+
+
+int expression(std::stringstream& in){
+	return 0;
+}
+
+
+int parse_interpret(std::stringstream& in){
 	char ch;
 	while(in.get(ch)){
 		std::cout << ch << std::endl;
 	}
 	return 0;
 }
+
 
 int main(void){
 	//Grab the users input
@@ -28,5 +44,5 @@ int main(void){
 	//We will use a stream to go character gy character
 	std::stringstream in(input);
 
-	return evaluate(in);
+	return parse_interpret(in);
 }
