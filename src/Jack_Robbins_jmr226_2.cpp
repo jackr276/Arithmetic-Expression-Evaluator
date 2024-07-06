@@ -2,6 +2,7 @@
  * Author: Jack Robbins, jmr226
  * CS 610, programming assignment 2, Recursive descent parser/interpreter
  */
+#include <cstdlib>
 #include <ios>
 #include <iostream>
 #include <sstream>
@@ -51,20 +52,28 @@ bool consume_token(std::stringstream& in, char expected_token){
 
 
 /**
+ * Simple helper function, tells us if we have a digit or not
+ */
+bool is_digit(char ch){
+	return ch >= '0' && ch <= '9';
+}
+
+/**
  * BNF Rule: <literal>  ::=  0|1|2|3|4|5|6|7|8|9
  */
 int literal(std::stringstream& in){
-	//Seek the next non whitespace token
+	//Consume the next token
 	char literal = seek(in);
-
-	//If it's a digit, we convert to an int and return it
-	if(literal >= '0' && literal <= '9'){
-		return literal - '0';	
+	
+	if(is_digit(literal)){
+		consume_token(in, literal);
+		return literal - '0';
 	}
 
 	//Otherwise, we have a bad token
 	std::cerr << literal << " is not a valid literal" << std::endl;
-	return -1;
+	std::cerr << "Invalid expression" << std::endl;
+	exit(-1);
 }
 
 
@@ -76,6 +85,8 @@ int term(std::stringstream& in){
 	//Declare function prototype
 	int expression(std::stringstream& in);
 
+	return literal(in);
+
 	//Temporarily grab the next character
 	char ch;
 	in >> std::skipws >> ch;	
@@ -85,11 +96,8 @@ int term(std::stringstream& in){
 		in.putback(ch);
 		return literal(in);
 	} else {
-		in.putback(ch);
 		return expression(in);
 	}
-
-
 }
 
 
@@ -100,7 +108,6 @@ int factor(std::stringstream& in){
 	int value = term(in);
 
 	if(consume_token(in, '+')){
-		std:: cout << "here";
 		value += factor(in);
 	} else if (consume_token(in, '-')){
 		value -= factor(in);
@@ -126,7 +133,9 @@ int expression(std::stringstream& in){
 		//Runtime error checking
 		if(divisor == 0){
 			std::cerr << "Illegal divide by 0 operation" << std::endl;
-			return -1;
+			std::cerr << "Invalid expression" << std::endl;
+			exit(-1);
+
 		} else {
 			value /= divisor; 
 		}
@@ -152,4 +161,5 @@ int main(void){
 	std::stringstream in(input);
 
 	std::cout << parse_interpret(in) << std::endl;
+
 }
