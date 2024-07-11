@@ -10,11 +10,9 @@
  */
 
 #include <cstdlib>
-#include <ios>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <type_traits>
 
 
 struct parse_tree_node{
@@ -77,15 +75,15 @@ bool is_digit(char ch){
 /**
  * BNF Rule: <operand> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
  */
-int operand(std::stringstream& in, struct parse_tree_node* curr_node){
+int operand(std::stringstream& in, struct parse_tree_node** curr_node){
 	//Consume the next token
 	char literal = seek(in);
 	
 	if(is_digit(literal)){
 		consume_token(in, literal);
-		curr_node->token = literal;
-		curr_node->lchild = NULL;
-		curr_node->rchild = NULL;
+		(*curr_node)->token = literal;
+		(*curr_node)->lchild = NULL;
+		(*curr_node)->rchild = NULL;
 		return literal - '0';
 	}
 
@@ -101,12 +99,12 @@ int operand(std::stringstream& in, struct parse_tree_node* curr_node){
 /**
  * BNF Rule: <factor>  ::=  ( <expression> ) | <operand>
  */
-int factor(std::stringstream& in, struct parse_tree_node* curr_node){
+int factor(std::stringstream& in, struct parse_tree_node** curr_node){
 	//Function prototype	
-	int expression(std::stringstream& in, struct parse_tree_node* curr_node);
+	int expression(std::stringstream& in, struct parse_tree_node** curr_node);
 
 	//Reserve space for the node
-	curr_node = (struct parse_tree_node*)malloc(sizeof(parse_tree_node));
+	*curr_node = (struct parse_tree_node*)malloc(sizeof(parse_tree_node));
 	int value;
 
 	//If we see an open parenthesis, we know we have an expression
@@ -137,25 +135,25 @@ int factor(std::stringstream& in, struct parse_tree_node* curr_node){
  * For this rule, we can have 0 or many expressions, or a literal
  * BNF Rule: <term> ::= <factor> * <term> | <factor> / <term> | <factor>
  */
-int term(std::stringstream& in, struct parse_tree_node* curr_node){
+int term(std::stringstream& in, struct parse_tree_node** curr_node){
 	//Reserve space for the node
-	curr_node = (struct parse_tree_node*)malloc(sizeof(parse_tree_node));
+	*curr_node = (struct parse_tree_node*)malloc(sizeof(parse_tree_node));
 
-	int value = factor(in, curr_node->lchild);
+	int value = factor(in, &((*curr_node)->lchild));
 
 	if(consume_token(in, '*')){
-		curr_node->token = '*';
-		value *= term(in, curr_node->rchild);
+		(*curr_node)->token = '*';
+		value *= term(in, &((*curr_node)->rchild));
 	} else if (consume_token(in, '/')){
 		//runtime error checking
-		int divisor = term(in, curr_node->rchild);
+		int divisor = term(in, &((*curr_node)->rchild));
 		if(divisor == 0){
 			std::cerr << "Arithmetic Error: divide by 0" << std::endl;
 			exit(-1);
 		}
 
-		curr_node->token = '/';
-		value /= factor(in, curr_node->rchild);
+		(*curr_node)->token = '/';
+		value /= divisor;
 	}
 
 	return value;
@@ -164,20 +162,19 @@ int term(std::stringstream& in, struct parse_tree_node* curr_node){
 /**
  * BNF Rule: <expression>  ::=  <term> + <expression>   |   <term>  -  <expression>   | <term>
  */
-int expression(std::stringstream& in, struct parse_tree_node* curr_node){
+int expression(std::stringstream& in, struct parse_tree_node** curr_node){
 	//Reserve space for the node
-	curr_node = (struct parse_tree_node*)malloc(sizeof(parse_tree_node));
+	*curr_node = (struct parse_tree_node*)malloc(sizeof(parse_tree_node));
 
 	//grab the first term's value
-	int value = term(in, curr_node->lchild);
+	int value = term(in, &((*curr_node)->lchild));
 
 	if(consume_token(in, '+')){
-		std::cout << "Operator: +" << std::endl;
-		curr_node->token = '+';
-		value += expression(in, curr_node->rchild);
+		(*curr_node)->token = '+';
+		value += expression(in, &((*curr_node)->rchild));
 	} else if (consume_token(in, '-')){
-		curr_node->token = '-';	
-		value -= expression(in, curr_node->rchild);
+		(*curr_node)->token = '-';	
+		value -= expression(in, &((*curr_node)->rchild));
 	}	
 
 	return value;
@@ -188,10 +185,19 @@ int expression(std::stringstream& in, struct parse_tree_node* curr_node){
  * Entry point to the recursive-descent parser. We start with an expression and the internals
  * are parsed recursively
  */
-int parse_interpret(std::stringstream& in, struct parse_tree_node* root){
+int parse_interpret(std::stringstream& in, struct parse_tree_node** root){
 	return expression(in, root);
 }
 
+void print_inorder(struct parse_tree_node* root){
+	if(root == NULL){
+		return;
+	}
+
+	print_inorder(root->lchild);
+	std::cout << root->token;
+	print_inorder(root->rchild);
+}
 
 /**
  * Entry point main function. Simply grabs input from the user and makes the 
@@ -206,11 +212,13 @@ int main(void){
 	//We will use a stream to go character gy character
 	std::stringstream in(input);
 
-	struct parse_tree_node* root; 
+	struct parse_tree_node** root = (struct parse_tree_node**)malloc(sizeof(struct parse_tree_node*)); 
 
 	//Make a call to parse_interpret with the input stream
 	int result = parse_interpret(in, root);
 
+	print_inorder(*root);
+	std::cout << std::endl;
 	//Display result nicely
 	std::cout << "Expression result: " << input << " = " << result << std::endl;
 

@@ -1,2 +1,2 @@
-g++ -Wall -Wextra ./src/Jack_Robbins_jmr226_2.cpp -o ./out/run
+g++  ./src/Jack_Robbins_jmr226_2.cpp -o ./out/run
 ./out/run
