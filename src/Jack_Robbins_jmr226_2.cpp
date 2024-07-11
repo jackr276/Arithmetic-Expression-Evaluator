@@ -67,6 +67,7 @@ int literal(std::stringstream& in){
 	
 	if(is_digit(literal)){
 		consume_token(in, literal);
+		std::cout << "Literal: " << literal << std::endl;
 		return literal - '0';
 	}
 
@@ -109,7 +110,9 @@ int factor(std::stringstream& in){
 
 	if(consume_token(in, '+')){
 		value += factor(in);
+		std::cout << "Operator: +" << std::endl;
 	} else if (consume_token(in, '-')){
+		std::cout << "Operator: -" << std::endl;
 		value -= factor(in);
 	}
 
@@ -125,6 +128,7 @@ int expression(std::stringstream& in){
 	int value = factor(in);
 
 	if(consume_token(in, '*')){
+		std::cout << "Operator: *" << std::endl;
 		value *= expression(in);
 	} else if (consume_token(in, '/')){
 		//Grab the divisor
@@ -137,6 +141,7 @@ int expression(std::stringstream& in){
 			exit(-1);
 
 		} else {
+			std::cout << "Operator: /" << std::endl;
 			value /= divisor; 
 		}
 	}
@@ -158,14 +163,18 @@ int parse_interpret(std::stringstream& in){
 int main(void){
 	//Grab the users input
 	std::string input;
-	std::cout << "\nEnter the arithmetic expression to evaluate: ";
+	std::cout << "Enter the arithmetic expression to evaluate: ";
 	std::getline(std::cin, input);
 
 	//We will use a stream to go character gy character
 	std::stringstream in(input);
 
 	//Make a call to parse_interpret with the input stream
-	std::cout << parse_interpret(in) << std::endl;
+	int result = parse_interpret(in);
+
+	std::cout << "Expression result: " << input << " = " << result << std::endl;
+
+
 
 	return 0;
 }
