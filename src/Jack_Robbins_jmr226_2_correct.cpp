@@ -8,13 +8,22 @@
  * <term>  		 ::= <factor> {(* | /) <factor>} 
  * <factor>      ::= ( <expression> ) | <literal>
  * <literal>     ::=  0|1|2|3|4|5|6|7|8|9
+ *
+ * 4 * 9 + 2 * 1
+ *
+ * 		 		Expression
+ * 			 		|
+ * 		 Term 		+ 	 Term
+ *        |               |
+ *  Factor * Factor   Factor * Factor
+ *    |       |         |        |
+ *    4       9         2        1
  */
 
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <string>
-
 
 /**
  * Peek at the next character in the stream

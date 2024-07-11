@@ -1,12 +1,27 @@
 /**
  * Author: Jack Robbins, jmr226
  * CS 610, programming assignment 2, Recursive descent parser/interpreter
+ *
+ * Implementation uses this BNF formula:
+ * <expression> ::= <term> + <expression> | <term> - <expression> | <term>
+ * <term> ::= <factor> * <term> | <factor> / <term> | <factor>
+ * <factor> ::= ( <expression> ) | <operand>
+ * <operand> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
  */
+
 #include <cstdlib>
 #include <ios>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <type_traits>
+
+
+struct parse_tree_node{
+	char token;
+	parse_tree_node* lchild;
+	parse_tree_node* rchild;
+};
 
 
 /**
@@ -58,16 +73,19 @@ bool is_digit(char ch){
 	return ch >= '0' && ch <= '9';
 }
 
+
 /**
- * BNF Rule: <literal>  ::=  0|1|2|3|4|5|6|7|8|9
+ * BNF Rule: <operand> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
  */
-int literal(std::stringstream& in){
+int operand(std::stringstream& in, struct parse_tree_node* curr_node){
 	//Consume the next token
 	char literal = seek(in);
 	
 	if(is_digit(literal)){
 		consume_token(in, literal);
-		std::cout << "Literal: " << literal << std::endl;
+		curr_node->token = literal;
+		curr_node->lchild = NULL;
+		curr_node->rchild = NULL;
 		return literal - '0';
 	}
 
@@ -78,81 +96,100 @@ int literal(std::stringstream& in){
 }
 
 
+
+
+/**
+ * BNF Rule: <factor>  ::=  ( <expression> ) | <operand>
+ */
+int factor(std::stringstream& in, struct parse_tree_node* curr_node){
+	//Function prototype	
+	int expression(std::stringstream& in, struct parse_tree_node* curr_node);
+
+	//Reserve space for the node
+	curr_node = (struct parse_tree_node*)malloc(sizeof(parse_tree_node));
+	int value;
+
+	//If we see an open parenthesis, we know we have an expression
+	if(consume_token(in, '(')) {
+		//Evaluate the expression
+		value = expression(in, curr_node);
+
+		//If we can consume an rparen, everything went well
+		if(consume_token(in, ')')){
+			return value;
+		} else {
+			//Otherwise, we have unmatched parenthesis
+			std::cerr << "Syntax Error: Unmatched parenthesis" << std::endl;
+			std::cerr << "Invalid expression" << std::endl;
+			//Hard exit
+			exit(1);
+		}
+	} else {
+		value = operand(in, curr_node);	
+	}
+
+
+	return value;
+}
+
+
 /**
  * For this rule, we can have 0 or many expressions, or a literal
- * BNF Rule: { <expression> } | <literal>
+ * BNF Rule: <term> ::= <factor> * <term> | <factor> / <term> | <factor>
  */
-int term(std::stringstream& in){
-	//Declare function prototype
-	int expression(std::stringstream& in);
+int term(std::stringstream& in, struct parse_tree_node* curr_node){
+	//Reserve space for the node
+	curr_node = (struct parse_tree_node*)malloc(sizeof(parse_tree_node));
 
-	return literal(in);
-
-	//Temporarily grab the next character
-	char ch;
-	in >> std::skipws >> ch;	
-
-	//If we don't see a '*' or '/', we have a literal
-	if(peek_next(in) != '*' && peek_next(in) != '/'){
-		in.putback(ch);
-		return literal(in);
-	} else {
-		return expression(in);
-	}
-}
-
-
-/**
- * BNF Rule: <factor>  :==  <term> + <factor>  |  <term> - <factor>  |  <term>
- */
-int factor(std::stringstream& in){
-	int value = term(in);
-
-	if(consume_token(in, '+')){
-		value += factor(in);
-		std::cout << "Operator: +" << std::endl;
-	} else if (consume_token(in, '-')){
-		std::cout << "Operator: -" << std::endl;
-		value -= factor(in);
-	}
-
-	return value;
-}
-
-
-/**
- * BNF Rule: <expression>  ::=  <factor> * <expression>   |   <factor>  /  <expression>   |   <factor>
- */
-int expression(std::stringstream& in){
-	//grab the first factor's value
-	int value = factor(in);
+	int value = factor(in, curr_node->lchild);
 
 	if(consume_token(in, '*')){
-		std::cout << "Operator: *" << std::endl;
-		value *= expression(in);
+		curr_node->token = '*';
+		value *= term(in, curr_node->rchild);
 	} else if (consume_token(in, '/')){
-		//Grab the divisor
-		int divisor = expression(in);
-
-		//Runtime error checking
+		//runtime error checking
+		int divisor = term(in, curr_node->rchild);
 		if(divisor == 0){
-			std::cerr << "Illegal divide by 0 operation" << std::endl;
-			std::cerr << "Invalid expression" << std::endl;
+			std::cerr << "Arithmetic Error: divide by 0" << std::endl;
 			exit(-1);
-
-		} else {
-			std::cout << "Operator: /" << std::endl;
-			value /= divisor; 
 		}
+
+		curr_node->token = '/';
+		value /= factor(in, curr_node->rchild);
 	}
 
 	return value;
 }
 
+/**
+ * BNF Rule: <expression>  ::=  <term> + <expression>   |   <term>  -  <expression>   | <term>
+ */
+int expression(std::stringstream& in, struct parse_tree_node* curr_node){
+	//Reserve space for the node
+	curr_node = (struct parse_tree_node*)malloc(sizeof(parse_tree_node));
+
+	//grab the first term's value
+	int value = term(in, curr_node->lchild);
+
+	if(consume_token(in, '+')){
+		std::cout << "Operator: +" << std::endl;
+		curr_node->token = '+';
+		value += expression(in, curr_node->rchild);
+	} else if (consume_token(in, '-')){
+		curr_node->token = '-';	
+		value -= expression(in, curr_node->rchild);
+	}	
+
+	return value;
+}
 
 
-int parse_interpret(std::stringstream& in){
-	return expression(in);
+/**
+ * Entry point to the recursive-descent parser. We start with an expression and the internals
+ * are parsed recursively
+ */
+int parse_interpret(std::stringstream& in, struct parse_tree_node* root){
+	return expression(in, root);
 }
 
 
@@ -169,12 +206,13 @@ int main(void){
 	//We will use a stream to go character gy character
 	std::stringstream in(input);
 
+	struct parse_tree_node* root; 
+
 	//Make a call to parse_interpret with the input stream
-	int result = parse_interpret(in);
+	int result = parse_interpret(in, root);
 
+	//Display result nicely
 	std::cout << "Expression result: " << input << " = " << result << std::endl;
-
-
 
 	return 0;
 }
