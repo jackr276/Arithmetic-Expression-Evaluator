@@ -9,11 +9,16 @@
  * <operand> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
  */
 
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include <cstdlib>
 #include <iostream>
+#include <ostream>
 #include <sstream>
 #include <string>
 
+#define SPACES 5 
 
 /**
  * Define a node for our parse tree. The parse tree will be built as we interpret, 
@@ -83,6 +88,9 @@ bool is_digit(char ch){
 int operand(std::stringstream& in, struct parse_tree_node** curr_node){
 	//Consume the next token
 	char literal = seek(in);
+	
+	//Reserve space for the node
+	*curr_node = (struct parse_tree_node*)malloc(sizeof(parse_tree_node));
 
 	//If we get a digit, we know it went well
 	if(is_digit(literal)){
@@ -112,9 +120,6 @@ int operand(std::stringstream& in, struct parse_tree_node** curr_node){
 int factor(std::stringstream& in, struct parse_tree_node** curr_node){
 	//Function prototype	
 	int expression(std::stringstream& in, struct parse_tree_node** curr_node);
-
-	//Reserve space for the node
-	*curr_node = (struct parse_tree_node*)malloc(sizeof(parse_tree_node));
 	int value;
 
 	//If we see an open parenthesis, we know we have an expression
@@ -210,15 +215,64 @@ int parse_interpret(std::stringstream& in, struct parse_tree_node** root){
 	return expression(in, root);
 }
 
+/**
+ * Determine the height of a tree whose parent is node
+ */
+int height(struct parse_tree_node* root){
+	//Base case
+	if(root == NULL){
+		return 0;
+	}
 
-void print_inorder(struct parse_tree_node* root){
+	return std::max(height(root->lchild), height(root->rchild) + 1);
+}
+
+
+int column_of_height(int height){
+	if(height == 1){
+		return 1;
+	}
+
+	return column_of_height(height - 1) + column_of_height(height - 1)  + 1;
+}
+
+void print_tree(int** column_matrix, struct parse_tree_node* root, int column, int row, int height){
 	if(root == NULL){
 		return;
 	}
+	
+	std::cout << "Row: " << row << " Column: " << column << std::endl;
 
-	print_inorder(root->lchild);
-	std::cout << root->token;
-	print_inorder(root->rchild);
+	column_matrix[row][column] = root->token;
+	print_tree(column_matrix, root->lchild, column - std::pow(2, height - 2), row + 1, height - 1);
+	print_tree(column_matrix, root->rchild, column + std::pow(2, height - 2), row + 1, height - 1);
+}
+
+
+
+void print(struct parse_tree_node* root){
+	int total_height = height(root);
+	int column_count = column_of_height(total_height);
+
+	int** column_matrix = new int*[total_height];
+
+	for(int i = 0; i < total_height; i++){
+		column_matrix[i] = new int[column_count];
+	}
+
+	std::cout << column_count << std::endl;
+	print_tree(column_matrix, root, column_count / 2, 0, total_height);
+
+	for(int i = 0; i < total_height; i++){
+		for(int j = 0; j < column_count; j++){
+			if(column_matrix[i][j] == 0){
+				std::cout << "  ";
+			} else {
+				std::cout << column_matrix[i][j] << " ";
+			} 
+			std::cout << std::endl;
+		}
+	}
 }
 
 
@@ -240,7 +294,9 @@ int main(void){
 	//Make a call to parse_interpret with the input stream
 	int result = parse_interpret(in, root);
 
-	print_inorder(*root);
+	print(*root);
+
+	std::cout << height(*root);
 	std::cout << std::endl;
 	//Display result nicely
 	std::cout << "Expression result: " << input << " = " << result << std::endl;
