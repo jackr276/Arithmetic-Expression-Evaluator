@@ -9,8 +9,6 @@
  * <operand> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
  */
 
-#include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
@@ -18,7 +16,7 @@
 #include <sstream>
 #include <string>
 
-#define SPACES 5 
+#define SPACES 2 
 
 /**
  * Define a node for our parse tree. The parse tree will be built as we interpret, 
@@ -215,64 +213,25 @@ int parse_interpret(std::stringstream& in, struct parse_tree_node** root){
 	return expression(in, root);
 }
 
-/**
- * Determine the height of a tree whose parent is node
- */
-int height(struct parse_tree_node* root){
-	//Base case
-	if(root == NULL){
-		return 0;
-	}
 
-	return std::max(height(root->lchild), height(root->rchild) + 1);
-}
-
-
-int column_of_height(int height){
-	if(height == 1){
-		return 1;
-	}
-
-	return column_of_height(height - 1) + column_of_height(height - 1)  + 1;
-}
-
-void print_tree(int** column_matrix, struct parse_tree_node* root, int column, int row, int height){
+void print_tree_vertical(struct parse_tree_node* root, int space){
 	if(root == NULL){
 		return;
 	}
-	
-	std::cout << "Row: " << row << " Column: " << column << std::endl;
 
-	column_matrix[row][column] = root->token;
-	print_tree(column_matrix, root->lchild, column - std::pow(2, height - 2), row + 1, height - 1);
-	print_tree(column_matrix, root->rchild, column + std::pow(2, height - 2), row + 1, height - 1);
-}
+	print_tree_vertical(root->rchild, space);
 
+	space += SPACES;
 
-
-void print(struct parse_tree_node* root){
-	int total_height = height(root);
-	int column_count = column_of_height(total_height);
-
-	int** column_matrix = new int*[total_height];
-
-	for(int i = 0; i < total_height; i++){
-		column_matrix[i] = new int[column_count];
+	for(int i = SPACES; i < space; i++){
+		std::cout << " ";
 	}
 
-	std::cout << column_count << std::endl;
-	print_tree(column_matrix, root, column_count / 2, 0, total_height);
+	std::cout << root->token;
 
-	for(int i = 0; i < total_height; i++){
-		for(int j = 0; j < column_count; j++){
-			if(column_matrix[i][j] == 0){
-				std::cout << "  ";
-			} else {
-				std::cout << column_matrix[i][j] << " ";
-			} 
-			std::cout << std::endl;
-		}
-	}
+	std::cout << std::endl;
+
+	print_tree_vertical(root->lchild, space);
 }
 
 
@@ -281,12 +240,21 @@ void print(struct parse_tree_node* root){
  * appropriate calls. Command line arguments are not used
  */
 int main(void){
+	std::cout << "Welcome to the arithmetic expression evaluator" << std::endl;
+	std::cout << "\n=====================================================================================================" << std::endl;
+	std::cout << "Expressions must obey the following BNF grammar" << std::endl;
+	std::cout << "* <expression>  ::= <term> + <expression>   |   <term>  -  <expression>   | <term>\n";
+	std::cout << "* <term>        ::= <factor> * <term> | <factor> / <term> | <factor>\n";
+	std::cout << "* <factor>      ::= ( <expression> ) | <operand>\n";
+	std::cout << "* <operand>     ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9\n";
+	std::cout << "=====================================================================================================\n" << std::endl;
+
 	//Grab the users input
 	std::string input;
 	std::cout << "Enter the arithmetic expression to evaluate: ";
 	std::getline(std::cin, input);
 
-	//We will use a stream to go character gy character
+	//We will use a stream to go character by character
 	std::stringstream in(input);
 
 	struct parse_tree_node** root = (struct parse_tree_node**)malloc(sizeof(struct parse_tree_node*)); 
@@ -294,12 +262,13 @@ int main(void){
 	//Make a call to parse_interpret with the input stream
 	int result = parse_interpret(in, root);
 
-	print(*root);
-
-	std::cout << height(*root);
-	std::cout << std::endl;
 	//Display result nicely
 	std::cout << "Expression result: " << input << " = " << result << std::endl;
+
+	//Display the expression tree
+	std::cout << "Expression tree: " << std::endl;
+	print_tree_vertical(*root, 0);
+	std::cout << std::endl;
 
 	return 0;
 }
