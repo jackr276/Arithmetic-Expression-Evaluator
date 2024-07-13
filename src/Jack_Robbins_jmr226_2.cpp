@@ -214,23 +214,33 @@ int parse_interpret(std::stringstream& in, struct parse_tree_node** root){
 }
 
 
+/**
+ * Vertical tree printing function
+ */
 void print_tree_vertical(struct parse_tree_node* root, int space){
+	//Base case
 	if(root == NULL){
 		return;
 	}
 
+	//Recursively print the right subtree on top
 	print_tree_vertical(root->rchild, space);
 
+	//Increment number of spaces
 	space += SPACES;
 
+	//Print out the spacing
 	for(int i = SPACES; i < space; i++){
 		std::cout << " ";
 	}
 
+	//Print out the token
 	std::cout << root->token;
 
+	//Newline spacing
 	std::cout << std::endl;
 
+	//Recursively print out the left subtree
 	print_tree_vertical(root->lchild, space);
 }
 
