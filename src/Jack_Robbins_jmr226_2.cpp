@@ -15,6 +15,10 @@
 #include <string>
 
 
+/**
+ * Define a node for our parse tree. The parse tree will be built as we interpret, 
+ * so we will build it as we are traversing it using recursive descent
+ */
 struct parse_tree_node{
 	char token;
 	parse_tree_node* lchild;
@@ -73,17 +77,24 @@ bool is_digit(char ch){
 
 
 /**
+ * Operands are single digits
  * BNF Rule: <operand> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
  */
 int operand(std::stringstream& in, struct parse_tree_node** curr_node){
 	//Consume the next token
 	char literal = seek(in);
-	
+
+	//If we get a digit, we know it went well
 	if(is_digit(literal)){
+		//Consume from the in stream
 		consume_token(in, literal);
+
+		//This should be a child on our parse tree
 		(*curr_node)->token = literal;
 		(*curr_node)->lchild = NULL;
 		(*curr_node)->rchild = NULL;
+
+		//Convert to a number
 		return literal - '0';
 	}
 
@@ -94,9 +105,8 @@ int operand(std::stringstream& in, struct parse_tree_node** curr_node){
 }
 
 
-
-
 /**
+ * Our recrusive descent step, factor can be an expression in parenthesis or just an operand
  * BNF Rule: <factor>  ::=  ( <expression> ) | <operand>
  */
 int factor(std::stringstream& in, struct parse_tree_node** curr_node){
@@ -123,27 +133,32 @@ int factor(std::stringstream& in, struct parse_tree_node** curr_node){
 			exit(1);
 		}
 	} else {
+		//Otherwise we just have an operand
 		value = operand(in, curr_node);	
 	}
-
 
 	return value;
 }
 
 
 /**
- * For this rule, we can have 0 or many expressions, or a literal
+ * Our division and multiplication rule. This will always appear deeper
+ * in the parse tree than addition and subtraction, meaning it has higher precedence
  * BNF Rule: <term> ::= <factor> * <term> | <factor> / <term> | <factor>
  */
 int term(std::stringstream& in, struct parse_tree_node** curr_node){
 	//Reserve space for the node
 	*curr_node = (struct parse_tree_node*)malloc(sizeof(parse_tree_node));
 
+	//We must see a valid factor first
 	int value = factor(in, &((*curr_node)->lchild));
 
+	//Multiplication case
 	if(consume_token(in, '*')){
 		(*curr_node)->token = '*';
+		//Get the term on the RHS
 		value *= term(in, &((*curr_node)->rchild));
+	//Division case
 	} else if (consume_token(in, '/')){
 		//runtime error checking
 		int divisor = term(in, &((*curr_node)->rchild));
@@ -151,7 +166,7 @@ int term(std::stringstream& in, struct parse_tree_node** curr_node){
 			std::cerr << "Arithmetic Error: divide by 0" << std::endl;
 			exit(-1);
 		}
-
+		
 		(*curr_node)->token = '/';
 		value /= divisor;
 	}
@@ -159,7 +174,9 @@ int term(std::stringstream& in, struct parse_tree_node** curr_node){
 	return value;
 }
 
+
 /**
+ * The entry point to our parse tree
  * BNF Rule: <expression>  ::=  <term> + <expression>   |   <term>  -  <expression>   | <term>
  */
 int expression(std::stringstream& in, struct parse_tree_node** curr_node){
@@ -169,11 +186,15 @@ int expression(std::stringstream& in, struct parse_tree_node** curr_node){
 	//grab the first term's value
 	int value = term(in, &((*curr_node)->lchild));
 
+	//Addition case
 	if(consume_token(in, '+')){
 		(*curr_node)->token = '+';
+		//Get the expression on the RHS
 		value += expression(in, &((*curr_node)->rchild));
+	//Subtraction case
 	} else if (consume_token(in, '-')){
 		(*curr_node)->token = '-';	
+		//Get the expression on the RHS
 		value -= expression(in, &((*curr_node)->rchild));
 	}	
 
@@ -189,6 +210,7 @@ int parse_interpret(std::stringstream& in, struct parse_tree_node** root){
 	return expression(in, root);
 }
 
+
 void print_inorder(struct parse_tree_node* root){
 	if(root == NULL){
 		return;
@@ -198,6 +220,7 @@ void print_inorder(struct parse_tree_node* root){
 	std::cout << root->token;
 	print_inorder(root->rchild);
 }
+
 
 /**
  * Entry point main function. Simply grabs input from the user and makes the 
