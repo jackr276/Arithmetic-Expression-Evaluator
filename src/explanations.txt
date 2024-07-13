@@ -1,0 +1,21 @@
+Author: Jack Robbins, jmr226
+CS 610 Summer 2024
+
+This program implements the grammar that Professor Mili gave in his July 4th lecture, since he said that we were allowed to choose which 
+one to use.
+
+To run this program, I recommend using clang++. If your Macbook has clang installed, odds are it has clang++ as well. However, I've 
+included instructions for running it both ways just in case
+
+Download and unzip the zip file to the directory of your choice. "cd" into that directory and use one these options
+
+Option 1: Using clang++(preferred option)
+	clang++ Jack_Robbins_jmr226_2.cpp -o run
+	./run
+
+Option 2: Using clang
+	clang -lstdc++ Jack_Robbins_jmr226_2.cpp -o run
+	./run
+
+The tree that the program prints out is a vertical tree. For the prettiest printing results, 
+I'd recommend using an expression like this: (3 + 1) * (9 - 2), the tree printing tends to work best this way

@@ -16,7 +16,7 @@
 #include <sstream>
 #include <string>
 
-#define SPACES 2 
+#define SPACES 5 
 
 /**
  * Define a node for our parse tree. The parse tree will be built as we interpret, 
@@ -240,6 +240,7 @@ void print_tree_vertical(struct parse_tree_node* root, int space){
  * appropriate calls. Command line arguments are not used
  */
 int main(void){
+	//Entry message
 	std::cout << "Welcome to the arithmetic expression evaluator" << std::endl;
 	std::cout << "\n=====================================================================================================" << std::endl;
 	std::cout << "Expressions must obey the following BNF grammar" << std::endl;
@@ -263,10 +264,10 @@ int main(void){
 	int result = parse_interpret(in, root);
 
 	//Display result nicely
-	std::cout << "Expression result: " << input << " = " << result << std::endl;
+	std::cout << "\nExpression result: " << input << " = " << result << std::endl;
 
 	//Display the expression tree
-	std::cout << "Expression tree: " << std::endl;
+	std::cout << "\nExpression tree: " << std::endl;
 	print_tree_vertical(*root, 0);
 	std::cout << std::endl;
 
