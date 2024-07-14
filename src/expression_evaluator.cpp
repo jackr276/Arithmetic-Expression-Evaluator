@@ -245,6 +245,28 @@ void print_tree_vertical(struct parse_tree_node* root, int space){
 
 
 /**
+ * Perform a postorder traversal of our tree, freeing all
+ * allocated memory
+ */
+void teardown_tree(struct parse_tree_node** root){
+	//Base case
+	if(*root == NULL){
+		return;
+	}
+
+	//Recurse left and right to teardown children
+	teardown_tree(&(*root)->lchild);
+	teardown_tree(&(*root)->rchild);
+
+	//Free our pointer
+	free(*root);
+	
+	//Set to null as a warning
+	*root = NULL;
+}
+
+
+/**
  * Entry point main function. Simply grabs input from the user and makes the 
  * appropriate calls. Command line arguments are not used
  */
@@ -279,6 +301,9 @@ int main(void){
 	std::cout << "\nExpression tree: " << std::endl;
 	print_tree_vertical(*root, 0);
 	std::cout << std::endl;
+
+	//Not necessary but good practice -- cleanup our garbage
+	teardown_tree(root);
 
 	return 0;
 }
