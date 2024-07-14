@@ -1,6 +1,6 @@
 /**
- * Author: Jack Robbins, jmr226
- * CS 610, programming assignment 2, Recursive descent parser/interpreter
+ * Author: Jack Robbins
+ * Recursive descent parser/interpreter for a simple arithmetic expression BNF grammar
  *
  * Implementation uses this BNF formula:
  * <expression> ::= <term> + <expression> | <term> - <expression> | <term>
@@ -9,14 +9,13 @@
  * <operand> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
  */
 
-#include <cstddef>
-#include <cstdlib>
 #include <iostream>
-#include <ostream>
 #include <sstream>
 #include <string>
 
+// Spaces for printing
 #define SPACES 5 
+
 
 /**
  * Define a node for our parse tree. The parse tree will be built as we interpret, 
