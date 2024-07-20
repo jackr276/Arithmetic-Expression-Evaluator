@@ -12,7 +12,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <tuple>
 
 // Spaces for printing
 #define SPACES 5 
