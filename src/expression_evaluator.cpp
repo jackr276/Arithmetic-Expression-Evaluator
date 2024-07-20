@@ -12,6 +12,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <tuple>
 
 // Spaces for printing
 #define SPACES 5 
@@ -57,7 +58,7 @@ char seek(std::stringstream& in){
  * Consume a token if we have what we expect. If we don't, return false
  * to let the caller know we do not have it
  */
-bool consume_token(std::stringstream& in, char expected_token){
+bool get_next_token(std::stringstream& in, char expected_token){
 	//If we do not get what we are looking for, importantly, this
 	// may or may not consitute an error
 	if(seek(in) != expected_token){
@@ -92,7 +93,7 @@ int operand(std::stringstream& in, struct parse_tree_node** curr_node){
 	//If we get a digit, we know it went well
 	if(is_digit(literal)){
 		//Consume from the in stream
-		consume_token(in, literal);
+		get_next_token(in, literal);
 
 		//This should be a child on our parse tree
 		(*curr_node)->token = literal;
@@ -120,12 +121,12 @@ int factor(std::stringstream& in, struct parse_tree_node** curr_node){
 	int value;
 
 	//If we see an open parenthesis, we know we have an expression
-	if(consume_token(in, '(')) {
+	if(get_next_token(in, '(')) {
 		//Evaluate the expression
 		value = expression(in, curr_node);
 
 		//If we can consume an rparen, everything went well
-		if(consume_token(in, ')')){
+		if(get_next_token(in, ')')){
 			return value;
 		} else {
 			//Otherwise, we have unmatched parenthesis
@@ -156,12 +157,12 @@ int term(std::stringstream& in, struct parse_tree_node** curr_node){
 	int value = factor(in, &((*curr_node)->lchild));
 
 	//Multiplication case
-	if(consume_token(in, '*')){
+	if(get_next_token(in, '*')){
 		(*curr_node)->token = '*';
 		//Get the term on the RHS
 		value *= term(in, &((*curr_node)->rchild));
 	//Division case
-	} else if (consume_token(in, '/')){
+	} else if (get_next_token(in, '/')){
 		//runtime error checking
 		int divisor = term(in, &((*curr_node)->rchild));
 		if(divisor == 0){
@@ -189,12 +190,12 @@ int expression(std::stringstream& in, struct parse_tree_node** curr_node){
 	int value = term(in, &((*curr_node)->lchild));
 
 	//Addition case
-	if(consume_token(in, '+')){
+	if(get_next_token(in, '+')){
 		(*curr_node)->token = '+';
 		//Get the expression on the RHS
 		value += expression(in, &((*curr_node)->rchild));
 	//Subtraction case
-	} else if (consume_token(in, '-')){
+	} else if (get_next_token(in, '-')){
 		(*curr_node)->token = '-';	
 		//Get the expression on the RHS
 		value -= expression(in, &((*curr_node)->rchild));
